@@ -1,5 +1,6 @@
 const express = require("express");
 const fs = require("fs");
+const axios = require("axios");
 
 const app = express();
 app.use(express.json());
@@ -21,21 +22,15 @@ function saveExpenses(data) {
 async function sendTelegramMessage(chatId, text) {
   console.log("➡️ Sending Telegram message to chat:", chatId, "text:", text);
 
-  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+  const res = await axios.post(
+    `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+    {
       chat_id: chatId,
       text,
-    }),
-  });
+    }
+  );
 
-  const body = await res.text();
-  console.log("📨 Telegram send response:", res.status, body);
-
-  if (!res.ok) {
-    throw new Error(`Telegram send failed: ${body}`);
-  }
+  console.log("📨 Telegram send response:", res.status, res.data);
 }
 
 app.post("/telegram-webhook", async (req, res) => {
@@ -104,7 +99,7 @@ app.post("/telegram-webhook", async (req, res) => {
     await sendTelegramMessage(chatId, "Try: spent 150 coffee");
     return res.sendStatus(200);
   } catch (err) {
-    console.error("❌ Webhook error:", err);
+    console.error("❌ Webhook error:", err.response?.data || err.message || err);
     return res.sendStatus(500);
   }
 });
